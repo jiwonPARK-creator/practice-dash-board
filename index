@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>도형의 마술: 삼각형의 합동조건</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        /* Gradient Text */
+        .text-gradient {
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-image: linear-gradient(to right, #4F46E5, #EC4899);
+        }
+
+        /* Card Hover Effects */
+        .condition-card {
+            transition: all 0.3s ease;
+        }
+        .condition-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Canvas container for drawing triangles */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 75%; /* 4:3 Aspect Ratio */
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            border: 2px dashed #cbd5e1;
+            transition: border-color 0.3s;
+        }
+        
+        .canvas-container:hover {
+            border-color: #94a3b8;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c7d2fe; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #818cf8; 
+        }
+        
+        /* Floating animation for intro shapes */
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .floating-shape {
+            animation: float 6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased selection:bg-indigo-200 selection:text-indigo-900">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center cursor-pointer" onclick="window.scrollTo(0,0)">
+                    <i class="fas fa-shapes text-indigo-600 text-2xl mr-2"></i>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">중1 수학 탐험</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#intro" class="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">합동이란?</a>
+                    <a href="#conditions" class="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">3가지 조건</a>
+                    <a href="#interactive" class="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">직접 해보기</a>
+                </div>
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-gray-900 focus:outline-none p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-gray-100 absolute w-full">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#intro" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50">합동이란?</a>
+                <a href="#conditions" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50">3가지 조건</a>
+                <a href="#interactive" class="block px-3 py-2 rounded-md text-base font-medium text-indigo-600 hover:bg-indigo-50">직접 해보기</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCI+CiAgPHBhdGggZD0iTTU0LjYyNyAzMC45NDFMMzAgNTUuNTY4IDUuMzczIDMwLjk0MWMtMy4xNi0zLjE2LTMuMTYtOC4yODUgMC0xMS40NDYgMy4xNi0zLjE2IDguMjg1LTMuMTYgMTEuNDQ2IDBMMzAgMzIuNjc2bDEzLjE4MS0xMy4xODFjMy4xNi0zLjE2IDguMjg1LTMuMTYgMTEuNDQ2IDAgMy4xNiAzLjE2IDMuMTYgOC4yODUgMCAxMS40NDZ6IiBmaWxsPSIjZjFmNWY5IiBmaWxsLXJ1bGU9ImV2ZW5vZGQiLz4KPC9zdmc+')] opacity-50"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            
+            <!-- Decorative Background Elements -->
+            <div class="absolute top-0 left-1/4 w-32 h-32 bg-indigo-200 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob floating-shape"></div>
+            <div class="absolute top-0 right-1/4 w-32 h-32 bg-pink-200 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob animation-delay-2000 floating-shape" style="animation-delay: 2s;"></div>
+            <div class="absolute -bottom-8 left-1/2 w-32 h-32 bg-yellow-200 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob animation-delay-4000 floating-shape" style="animation-delay: 4s;"></div>
+
+            <span class="inline-block py-1 px-3 rounded-full bg-indigo-100 text-indigo-800 text-sm font-semibold tracking-wider mb-4 border border-indigo-200">
+                중학교 1학년 2학기 도형
+            </span>
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 text-gray-900">
+                쌍둥이 삼각형의 비밀<br>
+                <span class="text-gradient">삼각형의 합동조건</span>
+            </h1>
+            <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-600 mb-8 leading-relaxed">
+                모양과 크기가 똑같아 완벽하게 포개어지는 두 삼각형! <br class="hidden sm:block">
+                어떤 조건이 맞아야 완벽한 '합동'이 될 수 있을까요? 지금부터 그 마법 같은 공식을 파헤쳐 봅니다.
+            </p>
+            <div class="flex justify-center gap-4">
+                <a href="#conditions" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 md:text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                    비밀 풀기 시작 <i class="fas fa-arrow-down ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Intro Section: What is Congruence? -->
+    <section id="intro" class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-indigo-50 rounded-3xl p-8 sm:p-12 relative overflow-hidden shadow-sm border border-indigo-100">
+                <div class="absolute top-0 right-0 -mr-8 -mt-8 text-indigo-100 opacity-50">
+                    <i class="fas fa-clone text-9xl"></i>
+                </div>
+                <div class="relative z-10">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4 flex items-center">
+                        <span class="bg-indigo-600 text-white w-10 h-10 rounded-full inline-flex items-center justify-center mr-3 text-xl shadow-md">
+                            <i class="fas fa-question"></i>
+                        </span>
+                        '합동'이 뭐예요?
+                    </h2>
+                    <p class="text-lg text-gray-700 leading-relaxed mb-6">
+                        수학에서 <strong>'합동(Congruence)'</strong>이란, 두 도형의 <strong>모양과 크기가 똑같아서</strong> 한 도형을 다른 도형 위에 놓았을 때 <strong>완벽하게 겹쳐지는 것</strong>을 말해요. 데칼코마니나 도장을 찍은 것처럼 말이죠!
+                    </p>
+                    <div class="bg-white p-6 rounded-2xl shadow-inner border border-gray-100">
+                        <p class="text-gray-800 font-medium mb-2">기호로는 어떻게 쓸까요?</p>
+                        <p class="text-xl">
+                            <span class="text-indigo-600 font-bold">\(\triangle \text{ABC} \equiv \triangle \text{DEF}\)</span>
+                        </p>
+                        <p class="text-sm text-gray-500 mt-2">
+                            * 주의: '=' 기호는 '넓이가 같다'는 뜻이므로, 합동일 때는 반드시 작대기 3개짜리 '\(\equiv\)'를 써야 해요!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content: The 3 Conditions -->
+    <section id="conditions" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-indigo-600 font-semibold tracking-wide uppercase text-sm">핵심 개념</h2>
+                <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                    삼각형이 합동이 되기 위한 3가지 마법 주문
+                </p>
+                <p class="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
+                    세 가지만 기억하세요. S는 변(Side), A는 각(Angle)을 뜻합니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <!-- SSS 합동 -->
+                <div class="bg-white rounded-2xl p-8 shadow-md condition-card border border-gray-100 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-blue-500 transform origin-left transition-transform group-hover:scale-x-100"></div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-2xl font-bold text-gray-900">SSS 합동</h3>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Side-Side-Side</span>
+                    </div>
+                    <p class="text-gray-600 mb-6 min-h-[4rem]">
+                        <strong>세 쌍의 대응변</strong>의 길이가 각각 같을 때.
+                    </p>
+                    
+                    <!-- Visual Representation -->
+                    <div class="aspect-w-4 aspect-h-3 mb-6 bg-slate-50 rounded-xl flex items-center justify-center p-4 border border-slate-100">
+                        <svg viewBox="0 0 200 100" class="w-full h-full drop-shadow-md">
+                            <!-- Triangle 1 -->
+                            <polygon points="10,80 50,20 90,80" fill="#DBEAFE" stroke="#3B82F6" stroke-width="2"/>
+                            <!-- Markings -->
+                            <line x1="25" y1="50" x2="35" y2="50" stroke="#EF4444" stroke-width="2"/>
+                            <line x1="65" y1="50" x2="75" y2="50" stroke="#EF4444" stroke-width="2"/>
+                            <line x1="68" y1="53" x2="78" y2="53" stroke="#EF4444" stroke-width="2"/>
+                            <line x1="45" y1="80" x2="45" y2="90" stroke="#EF4444" stroke-width="2"/>
+                            <line x1="50" y1="80" x2="50" y2="90" stroke="#EF4444" stroke-width="2"/>
+                            <line x1="55" y1="80" x2="55" y2="90" stroke="#EF4444" stroke-width="2"/>
+                            
+                            <text x="50" y="55" text-anchor="middle" font-size="20" fill="#3B82F6">≡</text>
+
+                            <!-- Triangle 2 -->
+                            <polygon points="110,80 150,20 190,80" fill="#DBEAFE" stroke="#3B82F6" stroke-width="2"/>
+                            <!-- Markings -->
+                            <line x1="125" y1="50" x2="135" y2="50" stroke="#EF4444" stroke-width="2"/>
+                            <line x1="165" y1="50" x2="175" y2="50" stroke="#EF4444" stroke-width="2"/>
+                            <line x1="168" y1="53" x2="178" y2="53" stroke="#EF4444" stroke-width="2"/>
+                            <line x1="145" y1="80" x2="145" y2="90" stroke="#EF4444" stroke-width="2"/>
+                            <line x1="150" y1="80" x2="150" y2="90" stroke="#EF4444" stroke-width="2"/>
+                            <line x1="155" y1="80" x2="155" y2="90" stroke="#EF4444" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-700">
+                        <ul class="space-y-1 font-mono text-center">
+                            <li>AB = A'B' <span class="text-blue-500 font-bold">(S)</span></li>
+                            <li>BC = B'C' <span class="text-blue-500 font-bold">(S)</span></li>
+                            <li>CA = C'A' <span class="text-blue-500 font-bold">(S)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- SAS 합동 -->
+                <div class="bg-white rounded-2xl p-8 shadow-md condition-card border border-gray-100 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-pink-500 transform origin-left transition-transform group-hover:scale-x-100"></div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-2xl font-bold text-gray-900">SAS 합동</h3>
+                        <span class="bg-pink-100 text-pink-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Side-Angle-Side</span>
+                    </div>
+                    <p class="text-gray-600 mb-6 min-h-[4rem]">
+                        <strong>두 쌍의 대응변</strong>의 길이가 같고, 그 <strong>끼인가각</strong>의 크기가 같을 때.
+                    </p>
+                    
+                    <!-- Visual Representation -->
+                    <div class="aspect-w-4 aspect-h-3 mb-6 bg-slate-50 rounded-xl flex items-center justify-center p-4 border border-slate-100">
+                        <svg viewBox="0 0 200 100" class="w-full h-full drop-shadow-md">
+                            <!-- Triangle 1 -->
+                            <polygon points="10,80 10,20 80,80" fill="#FCE7F3" stroke="#EC4899" stroke-width="2"/>
+                            <!-- Markings -->
+                            <line x1="5" y1="50" x2="15" y2="50" stroke="#3B82F6" stroke-width="2"/> <!-- Side -->
+                            <path d="M 10 65 A 15 15 0 0 0 25 80" fill="none" stroke="#F59E0B" stroke-width="2"/> <!-- Angle -->
+                            <line x1="45" y1="75" x2="45" y2="85" stroke="#3B82F6" stroke-width="2"/> <!-- Side -->
+                            <line x1="48" y1="75" x2="48" y2="85" stroke="#3B82F6" stroke-width="2"/>
+                            
+                            <text x="95" y="55" text-anchor="middle" font-size="20" fill="#EC4899">≡</text>
+
+                            <!-- Triangle 2 -->
+                            <polygon points="110,80 110,20 180,80" fill="#FCE7F3" stroke="#EC4899" stroke-width="2"/>
+                            <!-- Markings -->
+                            <line x1="105" y1="50" x2="115" y2="50" stroke="#3B82F6" stroke-width="2"/>
+                            <path d="M 110 65 A 15 15 0 0 0 125 80" fill="none" stroke="#F59E0B" stroke-width="2"/>
+                            <line x1="145" y1="75" x2="145" y2="85" stroke="#3B82F6" stroke-width="2"/>
+                            <line x1="148" y1="75" x2="148" y2="85" stroke="#3B82F6" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-700">
+                        <ul class="space-y-1 font-mono text-center">
+                            <li>AB = A'B' <span class="text-pink-500 font-bold">(S)</span></li>
+                            <li>∠B = ∠B' <span class="text-amber-500 font-bold">(A)</span> (끼인가)</li>
+                            <li>BC = B'C' <span class="text-pink-500 font-bold">(S)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- ASA 합동 -->
+                <div class="bg-white rounded-2xl p-8 shadow-md condition-card border border-gray-100 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-amber-500 transform origin-left transition-transform group-hover:scale-x-100"></div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-2xl font-bold text-gray-900">ASA 합동</h3>
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Angle-Side-Angle</span>
+                    </div>
+                    <p class="text-gray-600 mb-6 min-h-[4rem]">
+                        <strong>한 쌍의 대응변</strong>의 길이가 같고, 그 <strong>양 끝각</strong>의 크기가 각각 같을 때.
+                    </p>
+                    
+                    <!-- Visual Representation -->
+                    <div class="aspect-w-4 aspect-h-3 mb-6 bg-slate-50 rounded-xl flex items-center justify-center p-4 border border-slate-100">
+                        <svg viewBox="0 0 200 100" class="w-full h-full drop-shadow-md">
+                            <!-- Triangle 1 -->
+                            <polygon points="20,80 50,30 80,80" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/>
+                            <!-- Markings -->
+                            <path d="M 35 80 A 15 15 0 0 1 28 65" fill="none" stroke="#EC4899" stroke-width="2"/> <!-- Angle 1 -->
+                            <line x1="50" y1="75" x2="50" y2="85" stroke="#3B82F6" stroke-width="2"/> <!-- Side -->
+                            <path d="M 80 65 A 15 15 0 0 0 65 80" fill="none" stroke="#EC4899" stroke-width="2"/> <!-- Angle 2 -->
+                            <path d="M 77 65 A 18 18 0 0 0 62 80" fill="none" stroke="#EC4899" stroke-width="2"/>
+                            
+                            <text x="100" y="55" text-anchor="middle" font-size="20" fill="#F59E0B">≡</text>
+
+                            <!-- Triangle 2 -->
+                            <polygon points="120,80 150,30 180,80" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/>
+                            <!-- Markings -->
+                            <path d="M 135 80 A 15 15 0 0 1 128 65" fill="none" stroke="#EC4899" stroke-width="2"/>
+                            <line x1="150" y1="75" x2="150" y2="85" stroke="#3B82F6" stroke-width="2"/>
+                            <path d="M 180 65 A 15 15 0 0 0 165 80" fill="none" stroke="#EC4899" stroke-width="2"/>
+                            <path d="M 177 65 A 18 18 0 0 0 162 80" fill="none" stroke="#EC4899" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-700">
+                        <ul class="space-y-1 font-mono text-center">
+                            <li>∠B = ∠B' <span class="text-amber-500 font-bold">(A)</span></li>
+                            <li>BC = B'C' <span class="text-blue-500 font-bold">(S)</span> (양 끝각 사이)</li>
+                            <li>∠C = ∠C' <span class="text-amber-500 font-bold">(A)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="mt-12 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-sm">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-yellow-800">함정 주의!</h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <p><strong>AAA (세 각이 같음)</strong>이나 <strong>SSA (두 변과 끼인각이 아닌 각이 같음)</strong>는 합동 조건이 <strong>아닙니다!</strong> 세 각이 같으면 크기가 다른 '닮은' 삼각형이 될 수 있어요.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Section -->
+    <section id="interactive" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                    직접 만들어보는 합동 삼각형
+                </h2>
+                <p class="mt-4 text-lg text-gray-500">
+                    아래 슬라이더를 조절하여 조건을 만족하는 두 삼각형이 어떻게 똑같이 변하는지 관찰해보세요.
+                </p>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-200">
+                <div class="grid grid-cols-1 lg:grid-cols-3">
+                    
+                    <!-- Controls Panel -->
+                    <div class="bg-gray-50 p-6 lg:border-r border-gray-200 lg:col-span-1 flex flex-col gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">합동 조건 선택</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button id="btn-sss" class="cond-btn bg-indigo-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors">SSS</button>
+                                <button id="btn-sas" class="cond-btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 py-2 px-4 rounded-md text-sm font-medium transition-colors">SAS</button>
+                                <button id="btn-asa" class="cond-btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 py-2 px-4 rounded-md text-sm font-medium transition-colors">ASA</button>
+                            </div>
+                        </div>
+
+                        <!-- Sliders for SSS -->
+                        <div id="controls-sss" class="space-y-4">
+                            <h4 class="font-bold text-gray-800 border-b pb-2">변의 길이 조절 (SSS)</h4>
+                            <div>
+                                <label class="flex justify-between text-sm text-gray-600">
+                                    <span>변 a (밑변)</span> <span id="val-a" class="font-mono text-indigo-600 font-bold">200</span>
+                                </label>
+                                <input type="range" id="slider-a" min="100" max="300" value="200" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-sm text-gray-600">
+                                    <span>변 b (왼쪽)</span> <span id="val-b" class="font-mono text-indigo-600 font-bold">150</span>
+                                </label>
+                                <input type="range" id="slider-b" min="100" max="250" value="150" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-sm text-gray-600">
+                                    <span>변 c (오른쪽)</span> <span id="val-c" class="font-mono text-indigo-600 font-bold">180</span>
+                                </label>
+                                <input type="range" id="slider-c" min="100" max="250" value="180" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                            </div>
+                            <p id="sss-error" class="text-red-500 text-xs hidden mt-2"><i class="fas fa-exclamation-circle"></i> 두 변의 합이 가장 긴 변보다 커야 삼각형이 만들어집니다!</p>
+                        </div>
+
+                        <!-- Sliders for SAS -->
+                        <div id="controls-sas" class="space-y-4 hidden">
+                            <h4 class="font-bold text-gray-800 border-b pb-2">변과 끼인각 조절 (SAS)</h4>
+                            <div>
+                                <label class="flex justify-between text-sm text-gray-600">
+                                    <span>변 a (밑변)</span> <span id="val-sas-a" class="font-mono text-pink-600 font-bold">200</span>
+                                </label>
+                                <input type="range" id="slider-sas-a" min="100" max="300" value="200" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-600">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-sm text-gray-600">
+                                    <span>끼인각 (왼쪽 각)</span> <span id="val-sas-angle" class="font-mono text-pink-600 font-bold">60°</span>
+                                </label>
+                                <input type="range" id="slider-sas-angle" min="20" max="150" value="60" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-600">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-sm text-gray-600">
+                                    <span>변 b (왼쪽)</span> <span id="val-sas-b" class="font-mono text-pink-600 font-bold">150</span>
+                                </label>
+                                <input type="range" id="slider-sas-b" min="100" max="250" value="150" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-600">
+                            </div>
+                        </div>
+
+                        <!-- Sliders for ASA -->
+                        <div id="controls-asa" class="space-y-4 hidden">
+                            <h4 class="font-bold text-gray-800 border-b pb-2">양 끝각과 변 조절 (ASA)</h4>
+                            <div>
+                                <label class="flex justify-between text-sm text-gray-600">
+                                    <span>왼쪽 각</span> <span id="val-asa-ang1" class="font-mono text-amber-600 font-bold">50°</span>
+                                </label>
+                                <input type="range" id="slider-asa-ang1" min="20" max="120" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-sm text-gray-600">
+                                    <span>변 a (밑변)</span> <span id="val-asa-a" class="font-mono text-amber-600 font-bold">200</span>
+                                </label>
+                                <input type="range" id="slider-asa-a" min="100" max="300" value="200" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-sm text-gray-600">
+                                    <span>오른쪽 각</span> <span id="val-asa-ang2" class="font-mono text-amber-600 font-bold">60°</span>
+                                </label>
+                                <input type="range" id="slider-asa-ang2" min="20" max="120" value="60" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                            </div>
+                            <p id="asa-error" class="text-red-500 text-xs hidden mt-2"><i class="fas fa-exclamation-circle"></i> 두 각의 합이 180도보다 작아야 합니다!</p>
+                        </div>
+                        
+                        <div class="mt-auto pt-6 border-t border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-700">겹쳐보기 모드</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                  <input type="checkbox" id="toggle-overlap" class="sr-only peer">
+                                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">두 삼각형이 완벽하게 겹치는지 확인해보세요.</p>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Area -->
+                    <div class="p-6 lg:col-span-2 flex flex-col justify-center bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
+                        <h3 id="canvas-title" class="text-center font-bold text-xl mb-4 text-indigo-700">\(\triangle ABC \equiv \triangle DEF\) (SSS 합동)</h3>
+                        <div class="canvas-container shadow-inner bg-white/80 backdrop-blur-sm">
+                            <canvas id="triCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-gray-400 text-sm">
+                &copy; 2026 중1 수학 탐험. 본 페이지는 중학교 1학년 수학 교육용으로 제작되었습니다.
+            </p>
+            <div class="mt-4 flex justify-center space-x-4">
+                <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-home"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-envelope"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for Interactivity and Canvas Drawing -->
+    <script>
+        // DOM Elements
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const navbar = document.getElementById('navbar');
+        
+        // Mobile Menu Toggle
+        mobileBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Navbar shrink on scroll
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('shadow-md', 'py-1');
+            } else {
+                navbar.classList.remove('shadow-md', 'py-1');
+            }
+        });
+
+        // Canvas Setup
+        const canvas = document.getElementById('triCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            width = canvas.width;
+            height = canvas.height;
+            drawTriangles(); // Redraw on resize
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // State variables
+        let currentMode = 'sss'; // sss, sas, asa
+        let isOverlapping = false;
+        
+        // Colors
+        const colorT1 = 'rgba(79, 70, 229, 0.2)'; // Indigo light
+        const strokeT1 = '#4F46E5';
+        const colorT2 = 'rgba(236, 72, 153, 0.2)'; // Pink light
+        const strokeT2 = '#EC4899';
+        
+        const markColor = '#1F2937';
+
+        // UI Buttons
+        const btns = {
+            sss: document.getElementById('btn-sss'),
+            sas: document.getElementById('btn-sas'),
+            asa: document.getElementById('btn-asa')
+        };
+        const controls = {
+            sss: document.getElementById('controls-sss'),
+            sas: document.getElementById('controls-sas'),
+            asa: document.getElementById('controls-asa')
+        };
+        const canvasTitle = document.getElementById('canvas-title');
+
+        // Mode Switching
+        function setMode(mode) {
+            currentMode = mode;
+            // Update buttons visually
+            for(let key in btns) {
+                if(key === mode) {
+                    btns[key].className = 'cond-btn bg-indigo-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors';
+                } else {
+                    btns[key].className = 'cond-btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 py-2 px-4 rounded-md text-sm font-medium transition-colors';
+                }
+            }
+            // Toggle control panels
+            for(let key in controls) {
+                controls[key].classList.toggle('hidden', key !== mode);
+            }
+            
+            // Update Title
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, canvasTitle]);
+            if(mode === 'sss') canvasTitle.innerHTML = '\\(\\triangle ABC \\equiv \\triangle DEF\\) (SSS 합동)';
+            if(mode === 'sas') canvasTitle.innerHTML = '\\(\\triangle ABC \\equiv \\triangle DEF\\) (SAS 합동)';
+            if(mode === 'asa') canvasTitle.innerHTML = '\\(\\triangle ABC \\equiv \\triangle DEF\\) (ASA 합동)';
+            
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, canvasTitle]);
+            
+            drawTriangles();
+        }
+
+        btns.sss.addEventListener('click', () => setMode('sss'));
+        btns.sas.addEventListener('click', () => setMode('sas'));
+        btns.asa.addEventListener('click', () => setMode('asa'));
+
+        document.getElementById('toggle-overlap').addEventListener('change', (e) => {
+            isOverlapping = e.target.checked;
+            
+            // Animate overlap transition
+            let progress = 0;
+            const animate = () => {
+                progress += 0.05;
+                if(progress > 1) progress = 1;
+                drawTriangles(isOverlapping ? progress : 1 - progress);
+                if(progress < 1) requestAnimationFrame(animate);
+            };
+            requestAnimationFrame(animate);
+        });
+
+        // SSS Sliders
+        const s_a = document.getElementById('slider-a');
+        const s_b = document.getElementById('slider-b');
+        const s_c = document.getElementById('slider-c');
+        const err_sss = document.getElementById('sss-error');
+
+        [s_a, s_b, s_c].forEach(el => el.addEventListener('input', () => {
+            document.getElementById('val-a').innerText = s_a.value;
+            document.getElementById('val-b').innerText = s_b.value;
+            document.getElementById('val-c').innerText = s_c.value;
+            drawTriangles();
+        }));
+
+        // SAS Sliders
+        const sas_a = document.getElementById('slider-sas-a');
+        const sas_angle = document.getElementById('slider-sas-angle');
+        const sas_b = document.getElementById('slider-sas-b');
+        
+        [sas_a, sas_angle, sas_b].forEach(el => el.addEventListener('input', () => {
+            document.getElementById('val-sas-a').innerText = sas_a.value;
+            document.getElementById('val-sas-angle').innerText = sas_angle.value + '°';
+            document.getElementById('val-sas-b').innerText = sas_b.value;
+            drawTriangles();
+        }));
+
+        // ASA Sliders
+        const asa_ang1 = document.getElementById('slider-asa-ang1');
+        const asa_a = document.getElementById('slider-asa-a');
+        const asa_ang2 = document.getElementById('slider-asa-ang2');
+        const err_asa = document.getElementById('asa-error');
+
+        [asa_ang1, asa_a, asa_ang2].forEach(el => el.addEventListener('input', () => {
+            document.getElementById('val-asa-ang1').innerText = asa_ang1.value + '°';
+            document.getElementById('val-asa-a').innerText = asa_a.value;
+            document.getElementById('val-asa-ang2').innerText = asa_ang2.value + '°';
+            drawTriangles();
+        }));
+
+        // --- Math Helpers ---
+        // Calculate 3rd vertex given 3 sides (base is on x-axis)
+        function calcVertexSSS(a, b, c) {
+            // Check triangle inequality
+            if (a + b <= c || a + c <= b || b + c <= a) return null;
+            
+            // Using Law of Cosines to find x and y of vertex C
+            // b^2 = x^2 + y^2
+            // c^2 = (a-x)^2 + y^2 = a^2 - 2ax + x^2 + y^2 = a^2 - 2ax + b^2
+            // 2ax = a^2 + b^2 - c^2
+            let x = (a*a + b*b - c*c) / (2*a);
+            let y = Math.sqrt(b*b - x*x);
+            return {x: x, y: y};
+        }
+
+        // Calculate 3rd vertex given 2 sides and included angle (deg)
+        function calcVertexSAS(a, angleDeg, b) {
+            let angleRad = angleDeg * Math.PI / 180;
+            let x = b * Math.cos(angleRad);
+            let y = b * Math.sin(angleRad);
+            return {x: x, y: y};
+        }
+
+        // Calculate 3rd vertex given 1 side and 2 adjacent angles (deg)
+        function calcVertexASA(angle1Deg, a, angle2Deg) {
+            if (angle1Deg + angle2Deg >= 180) return null;
+            
+            let A = angle1Deg * Math.PI / 180;
+            let B = angle2Deg * Math.PI / 180;
+            
+            // Using Law of Sines
+            // c / sin(C) = b / sin(B) = a / sin(A) (angles are A, B, C; sides opposite are a,b,c)
+            // Here: base is length 'a'. Angles at ends are A and B. Angle at top is C = 180 - (A+B)
+            let C = Math.PI - (A + B);
+            
+            // side 'b' is opposite to angle B
+            let b = (a * Math.sin(B)) / Math.sin(C);
+            
+            let x = b * Math.cos(A);
+            let y = b * Math.sin(A);
+            
+            return {x: x, y: y};
+        }
+
+        // Draw a single triangle
+        function drawTriangle(ctx, pts, color, stroke, labels, isOverlay = false) {
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            ctx.lineTo(pts[1].x, pts[1].y);
+            ctx.lineTo(pts[2].x, pts[2].y);
+            ctx.closePath();
+            
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = stroke;
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#111827';
+            ctx.font = 'bold 16px Noto Sans KR';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Offset logic for labels
+            const offset = 20;
+            ctx.fillText(labels[0], pts[0].x - offset, pts[0].y + offset); // Bottom Left (B/E)
+            ctx.fillText(labels[1], pts[1].x + offset, pts[1].y + offset); // Bottom Right (C/F)
+            ctx.fillText(labels[2], pts[2].x, pts[2].y - offset); // Top (A/D)
+        }
+
+        // Draw Markings (Sides or Angles)
+        function drawSideMark(ctx, p1, p2, type, stroke) {
+            const mx = (p1.x + p2.x) / 2;
+            const my = (p1.y + p2.y) / 2;
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            
+            ctx.save();
+            ctx.translate(mx, my);
+            ctx.rotate(angle + Math.PI/2);
+            
+            ctx.strokeStyle = '#1F2937';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            if(type === 1) {
+                ctx.moveTo(-5, 0); ctx.lineTo(5, 0);
+            } else if (type === 2) {
+                ctx.moveTo(-5, -3); ctx.lineTo(5, -3);
+                ctx.moveTo(-5, 3); ctx.lineTo(5, 3);
+            } else if (type === 3) {
+                ctx.moveTo(-5, -5); ctx.lineTo(5, -5);
+                ctx.moveTo(-5, 0); ctx.lineTo(5, 0);
+                ctx.moveTo(-5, 5); ctx.lineTo(5, 5);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawAngleMark(ctx, p_vertex, p1, p2, radius, numArcs) {
+            const a1 = Math.atan2(p1.y - p_vertex.y, p1.x - p_vertex.x);
+            const a2 = Math.atan2(p2.y - p_vertex.y, p2.x - p_vertex.x);
+            
+            // Ensure draw in shortest direction
+            let start = a1;
+            let end = a2;
+            if (end < start) end += Math.PI * 2;
+            
+            // Small correction to draw inside the triangle depending on winding
+            
+            ctx.strokeStyle = '#F59E0B'; // Amber for angles
+            ctx.lineWidth = 2;
+            
+            for(let i=0; i<numArcs; i++) {
+                ctx.beginPath();
+                ctx.arc(p_vertex.x, p_vertex.y, radius + (i*5), start, end);
+                ctx.stroke();
+            }
+        }
+
+        // Main Draw Loop
+        // overlapRatio: 0 = separated, 1 = fully overlapped
+        function drawTriangles(overlapRatio = isOverlapping ? 1 : 0) {
+            ctx.clearRect(0, 0, width, height);
+
+            let a, b, c, ang1, ang2;
+            let vertex = null;
+            let isValid = true;
+
+            if (currentMode === 'sss') {
+                a = parseFloat(s_a.value);
+                b = parseFloat(s_b.value);
+                c = parseFloat(s_c.value);
+                vertex = calcVertexSSS(a, b, c);
+                if (!vertex) {
+                    err_sss.classList.remove('hidden');
+                    isValid = false;
+                } else {
+                    err_sss.classList.add('hidden');
+                }
+            } else if (currentMode === 'sas') {
+                a = parseFloat(sas_a.value);
+                ang1 = parseFloat(sas_angle.value);
+                b = parseFloat(sas_b.value);
+                vertex = calcVertexSAS(a, ang1, b);
+            } else if (currentMode === 'asa') {
+                ang1 = parseFloat(asa_ang1.value);
+                a = parseFloat(asa_a.value);
+                ang2 = parseFloat(asa_ang2.value);
+                vertex = calcVertexASA(ang1, a, ang2);
+                if (!vertex) {
+                    err_asa.classList.remove('hidden');
+                    isValid = false;
+                } else {
+                    err_asa.classList.add('hidden');
+                }
+            }
+
+            if (!isValid || !vertex) {
+                ctx.fillStyle = '#9CA3AF';
+                ctx.font = '20px Noto Sans KR';
+                ctx.textAlign = 'center';
+                ctx.fillText('삼각형이 만들어지지 않는 조건입니다.', width/2, height/2);
+                return;
+            }
+
+            // Calculations based on mathematical origin (0,0) at bottom-left of Triangle 1
+            // We need to translate this to center it nicely on canvas.
+            
+            // T1 base: (0,0) to (a,0). Top: (vertex.x, vertex.y)
+            // Y needs to be inverted for canvas coordinates (0 is top)
+            
+            // Determine bounding box to center
+            const triWidth = Math.max(a, vertex.x);
+            const triHeight = vertex.y;
+            
+            // Separation logic
+            const gap = 50; // Gap between triangles when separated
+            const totalWidthSeparated = triWidth * 2 + gap;
+            
+            // Start positions for T1
+            let startX1 = (width - totalWidthSeparated) / 2;
+            if(startX1 < 20) startX1 = 20; // Padding
+            let startY = (height + triHeight) / 2 + 20; // Bottom alignment
+
+            // Positions for T2
+            let startX2_target = startX1 + triWidth + gap; // Separated position
+            
+            // Apply overlap ratio to X2 position
+            // When overlapRatio = 1, startX2 = startX1 (fully overlapped)
+            // When overlapRatio = 0, startX2 = startX2_target
+            let startX2 = startX2_target - (startX2_target - startX1) * overlapRatio;
+            
+            // If overlapping, center the single overlapped triangle
+            if (overlapRatio > 0) {
+                 const centerAdjustmentX = ((width - triWidth) / 2) - startX1;
+                 startX1 += centerAdjustmentX * overlapRatio;
+                 startX2 += centerAdjustmentX * overlapRatio;
+            }
+
+
+            // Points for T1 (ABC)
+            const pts1 = [
+                {x: startX1, y: startY}, // B
+                {x: startX1 + a, y: startY}, // C
+                {x: startX1 + vertex.x, y: startY - vertex.y} // A
+            ];
+
+            // Points for T2 (DEF)
+            const pts2 = [
+                {x: startX2, y: startY}, // E
+                {x: startX2 + a, y: startY}, // F
+                {x: startX2 + vertex.x, y: startY - vertex.y} // D
+            ];
+
+            // Draw Triangle 2 (DEF) first so it goes behind if overlapping
+            drawTriangle(ctx, pts2, colorT2, strokeT2, ['E', 'F', 'D']);
+            
+            // Draw Triangle 1 (ABC)
+            drawTriangle(ctx, pts1, colorT1, strokeT1, ['B', 'C', 'A']);
+
+            // Draw markings based on condition (Only if not fully overlapped to avoid clutter)
+            if (overlapRatio < 0.8) {
+                if (currentMode === 'sss') {
+                    // Base (a)
+                    drawSideMark(ctx, pts1[0], pts1[1], 1);
+                    drawSideMark(ctx, pts2[0], pts2[1], 1);
+                    // Left (b)
+                    drawSideMark(ctx, pts1[0], pts1[2], 2);
+                    drawSideMark(ctx, pts2[0], pts2[2], 2);
+                    // Right (c)
+                    drawSideMark(ctx, pts1[1], pts1[2], 3);
+                    drawSideMark(ctx, pts2[1], pts2[2], 3);
+                } else if (currentMode === 'sas') {
+                    // Base (a)
+                    drawSideMark(ctx, pts1[0], pts1[1], 1);
+                    drawSideMark(ctx, pts2[0], pts2[1], 1);
+                    // Left (b)
+                    drawSideMark(ctx, pts1[0], pts1[2], 2);
+                    drawSideMark(ctx, pts2[0], pts2[2], 2);
+                    // Angle 1 (Bottom Left)
+                    drawAngleMark(ctx, pts1[0], pts1[1], pts1[2], 25, 1);
+                    drawAngleMark(ctx, pts2[0], pts2[1], pts2[2], 25, 1);
+                } else if (currentMode === 'asa') {
+                    // Base (a)
+                    drawSideMark(ctx, pts1[0], pts1[1], 1);
+                    drawSideMark(ctx, pts2[0], pts2[1], 1);
+                    // Angle 1 (Bottom Left)
+                    drawAngleMark(ctx, pts1[0], pts1[1], pts1[2], 25, 1);
+                    drawAngleMark(ctx, pts2[0], pts2[1], pts2[2], 25, 1);
+                    // Angle 2 (Bottom Right) - Order of p1, p2 matters for drawing inside
+                    drawAngleMark(ctx, pts1[1], pts1[2], pts1[0], 25, 2);
+                    drawAngleMark(ctx, pts2[1], pts2[2], pts2[0], 25, 2);
+                }
+            }
+
+            // Draw equivalence sign in middle if separated
+            if (overlapRatio === 0) {
+                ctx.fillStyle = '#6B7280';
+                ctx.font = '30px Noto Sans KR';
+                ctx.textAlign = 'center';
+                const midX = (startX1 + a + startX2) / 2;
+                ctx.fillText('≡', midX, startY - (triHeight/2));
+            }
+        }
+
+        // Initialize
+        window.onload = () => {
+            resizeCanvas();
+        };
+
+    </script>
+</body>
+</html>
